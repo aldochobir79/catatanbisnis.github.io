@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Pro Enterprise - Import Excel</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--primary:#2563eb;--dark:#0f172a;--success:#16a34a;--danger:#dc2626;--warning:#f59e0b;--bg:#f1f5f9}
+body{background:linear-gradient(135deg,#f8fafc,#e2e8f0);font-family:'Segoe UI',sans-serif;min-height:100vh}
+.navbar{background:linear-gradient(135deg,#0f172a,#1e293b);box-shadow:0 5px 20px rgba(0,0,0,.1)}
+.card{border:none;border-radius:24px;box-shadow:0 10px 35px rgba(0,0,0,.08)}
+.form-control,.form-select{border-radius:14px;padding:12px;border:1px solid #dbeafe}
+.form-control:focus,.form-select:focus{border-color:var(--primary);box-shadow:0 0 0.2rem rgba(37,99,235,.15)}
+.btn{border-radius:14px;font-weight:600;padding:10px 16px}
+.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none}
+.btn-success{background:linear-gradient(135deg,#16a34a,#15803d);border:none}
+.btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c);border:none}
+.btn-warning{background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:white}
+.btn-info{background:linear-gradient(135deg,#0891b2,#0e7490);border:none;color:white}
+.table{border-radius:18px;overflow:hidden}
+.table thead{background:#0f172a;color:white}
+.badge-masuk{background:#dcfce7;color:#166534;padding:8px 12px;border-radius:10px}
+.badge-keluar{background:#fee2e2;color:#991b1b;padding:8px 12px;border-radius:10px}
+.summary-card{border-radius:22px;padding:24px;color:white}
+.bg-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+.bg-green{background:linear-gradient(135deg,#16a34a,#15803d)}
+.bg-red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.bg-orange{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.stock-safe{color:var(--success);font-weight:bold}
+.stock-warning{color:var(--danger);font-weight:bold}
+.nav-pills.nav-link{border-radius:14px;padding:10px 16px;font-weight:600}
+.nav-pills.nav-link.active{background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+.drop-zone{border:2px dashed #2563eb;border-radius:16px;padding:30px;text-align:center;background:#eff6ff;cursor:pointer}
+.drop-zone:hover{background:#dbeafe}
+</style>
+</head>
+<body>
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark py-3 mb-4">
+<div class="container-fluid px-4">
+<div class="d-flex align-items-center">
+<h3 class="text-white fw-bold m-0"><i class="bi bi-box-seam-fill me-2"></i>Inventory Pro Enterprise</h3>
+</div>
+<div class="text-white text-end">
+<div class="small opacity-75">Smart Inventory Management</div>
+<div class="fw-bold">2026 Edition</div>
+</div>
+</div>
+</nav>
+
+<div class="container-fluid px-4">
+<!-- SUMMARY -->
+<div class="row mb-4">
+<div class="col-md-3 mb-3"><div class="summary-card bg-blue"><div class="small opacity-75">Total Barang</div><div class="fs-2 fw-bold" id="totalBarang">0</div></div></div>
+<div class="col-md-3 mb-3"><div class="summary-card bg-green"><div class="small opacity-75">Barang Masuk</div><div class="fs-2 fw-bold" id="totalMasuk">0</div></div></div>
+<div class="col-md-3 mb-3"><div class="summary-card bg-red"><div class="small opacity-75">Barang Keluar</div><div class="fs-2 fw-bold" id="totalKeluar">0</div></div></div>
+<div class="col-md-3 mb-3"><div class="summary-card bg-orange"><div class="small opacity-75">Stok Kritis</div><div class="fs-2 fw-bold" id="stokKritis">0</div></div></div>
+</div>
+
+<div class="row">
+<!-- FORM + IMPORT -->
+<div class="col-lg-4 mb-4">
+<div class="card p-4 mb-3">
+<h5 class="fw-bold mb-4"><i class="bi bi-plus-circle-fill text-primary me-2"></i>Input Mutasi Barang</h5>
+<form id="inventoryForm">
+<div class="mb-3"><label class="form-label fw-semibold">Tanggal</label><input type="date" id="date" class="form-control" required></div>
+<div class="mb-3"><label class="form-label fw-semibold">Jenis Transaksi</label><select id="type" class="form-select"><option value="MASUK">Barang Masuk</option><option value="KELUAR">Barang Keluar</option></select></div>
+<div class="mb-3"><label class="form-label fw-semibold">Kode Barang</label><input type="text" id="code" class="form-control" placeholder="ATK-001" required></div>
+<div class="mb-3"><label class="form-label fw-semibold">Nama Barang</label><input type="text" id="note" class="form-control" placeholder="Kertas A4" required></div>
+<div class="row">
+<div class="col-md-7 mb-3"><label class="form-label fw-semibold">Jumlah</label><input type="number" id="qty" class="form-control" min="1" required></div>
+<div class="col-md-5 mb-3"><label class="form-label fw-semibold">Satuan</label><input type="text" id="unit" class="form-control" placeholder="Pcs"></div>
+</div>
+<button type="submit" class="btn btn-primary w-100"><i class="bi bi-save me-2"></i>Simpan Transaksi</button>
+</form>
+</div>
+
+<!-- IMPORT EXCEL -->
+<div class="card p-4">
+<h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-excel text-success me-2"></i>Import dari Excel</h5>
+<div class="drop-zone mb-3" onclick="document.getElementById('fileInput').click()">
+<i class="bi bi-cloud-upload fs-1 text-primary"></i>
+<p class="mb-1 fw-semibold">Klik atau Drop File Excel</p>
+<p class="small text-muted mb-0">Format: Tanggal | Kode | Nama | Tipe | Qty | Satuan</p>
+<input type="file" id="fileInput" accept=".xlsx,.xls" hidden onchange="importExcel(event)">
+</div>
+<button class="btn btn-info w-100 mb-2" onclick="downloadTemplate()">
+<i class="bi bi-download me-2"></i>Download Template Excel
+</button>
+<button class="btn btn-danger w-100" onclick="hapusSemuaData()">
+<i class="bi bi-trash3 me-2"></i>Hapus Semua Data
+</button>
+</div>
+</div>
+
+<!-- TABLE -->
+<div class="col-lg-8">
+<div class="card p-4">
+<ul class="nav nav-pills mb-4">
+<li class="nav-item me-2"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#riwayat">Riwayat Transaksi</button></li>
+<li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#laporan" onclick="renderLaporan()">Laporan Persediaan</button></li>
+</ul>
+<div class="tab-content">
+<!-- RIWAYAT -->
+<div class="tab-pane fade show active" id="riwayat">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+<h5 class="fw-bold m-0">Data Mutasi Barang</h5>
+<button class="btn btn-success" onclick="exportExcel()"><i class="bi bi-file-earmark-excel me-1"></i>Export Excel</button>
+</div>
+<div class="table-responsive">
+<table class="table table-hover align-middle">
+<thead><tr><th>Tanggal</th><th>Kode</th><th>Barang</th><th>Tipe</th><th>Qty</th><th>Satuan</th><th>Aksi</th></tr></thead>
+<tbody id="inventoryBody"></tbody>
+</table>
+</div>
+</div>
+<!-- LAPORAN -->
+<div class="tab-pane fade" id="laporan">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+<h5 class="fw-bold m-0">Stock On Hand</h5>
+<button class="btn btn-danger" onclick="exportPDF()"><i class="bi bi-file-earmark-pdf me-1"></i>Cetak PDF</button>
+</div>
+<div class="table-responsive">
+<table class="table table-bordered align-middle text-center">
+<thead><tr><th>Kode</th><th>Nama Barang</th><th>Masuk</th><th>Keluar</th><th>Stok Akhir</th><th>Satuan</th></tr></thead>
+<tbody id="laporanBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let logs = JSON.parse(localStorage.getItem('inventoryLogs')) || [];
+document.getElementById('date').valueAsDate = new Date();
+
+document.getElementById('inventoryForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const data = {
+        id:Date.now(),
+        date:document.getElementById('date').value,
+        type:document.getElementById('type').value,
+        code:document.getElementById('code').value.toUpperCase(),
+        note:document.getElementById('note').value,
+        qty:Number(document.getElementById('qty').value),
+        unit:document.getElementById('unit').value
+    };
+    logs.push(data);
+    saveData();
+    this.reset();
+    document.getElementById('date').valueAsDate = new Date();
+});
+
+function saveData(){
+    localStorage.setItem('inventoryLogs',JSON.stringify(logs));
+    renderRiwayat();
+    renderSummary();
+}
+
+function deleteLog(id){
+    if(confirm('Hapus transaksi ini?')){
+        logs = logs.filter(l => l.id!== id);
+        saveData();
+    }
+}
+
+function hapusSemuaData(){
+    if(confirm('HAPUS SEMUA DATA INVENTORY? Data tidak bisa dikembalikan!')){
+        logs = [];
+        saveData();
+    }
+}
+
+function renderRiwayat(){
+    const body = document.getElementById('inventoryBody');
+    body.innerHTML = '';
+    if(logs.length===0){
+        body.innerHTML='<tr><td colspan="7" class="text-center py-5 text-muted">Belum ada data. Input manual atau Import Excel</td></tr>';
+        return;
+    }
+    logs.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(l=>{
+        const badge = l.type === 'MASUK'?'badge-masuk':'badge-keluar';
+        body.innerHTML += `
+        <tr>
+        <td>${l.date}</td>
+        <td><strong>${l.code}</strong></td>
+        <td>${l.note}</td>
+        <td><span class="${badge}">${l.type}</span></td>
+        <td class="fw-bold ${l.type === 'MASUK'?'text-success':'text-danger'}">${l.type === 'MASUK'?'+':'-'}${l.qty}</td>
+        <td>${l.unit}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="deleteLog(${l.id})"><i class="bi bi-trash"></i></button></td>
+        </tr>`;
+    });
+}
+
+function renderLaporan(){
+    const body = document.getElementById('laporanBody');
+    body.innerHTML = '';
+    const summary = {};
+    logs.forEach(l=>{
+        if(!summary[l.code]) summary[l.code] = {name:l.note,masuk:0,keluar:0,unit:l.unit};
+        if(l.type === 'MASUK') summary[l.code].masuk += l.qty;
+        else summary[l.code].keluar += l.qty;
+    });
+    for(const code in summary){
+        const s = summary[code];
+        const stok = s.masuk - s.keluar;
+        body.innerHTML += `
+        <tr>
+        <td><strong>${code}</strong></td>
+        <td>${s.name}</td>
+        <td class="text-success fw-bold">${s.masuk}</td>
+        <td class="text-danger fw-bold">${s.keluar}</td>
+        <td class="${stok<5?'stock-warning':'stock-safe'}">${stok}</td>
+        <td>${s.unit}</td>
+        </tr>`;
+    }
+}
+
+function renderSummary(){
+    const totalBarang = [...new Set(logs.map(l=>l.code))].length;
+    const masuk = logs.filter(l=>l.type==='MASUK').reduce((s,l)=>s+l.qty,0);
+    const keluar = logs.filter(l=>l.type==='KELUAR').reduce((s,l)=>s+l.qty,0);
+    let kritis = 0;
+    const stokMap = {};
+    logs.forEach(l=>{
+        if(!stokMap[l.code]) stokMap[l.code] = 0;
+        if(l.type==='MASUK') stokMap[l.code]+=l.qty;
+        else stokMap[l.code]-=l.qty;
+    });
+    for(const k in stokMap){if(stokMap[k] < 5) kritis++;}
+    document.getElementById('totalBarang').innerText = totalBarang;
+    document.getElementById('totalMasuk').innerText = masuk;
+    document.getElementById('totalKeluar').innerText = keluar;
+    document.getElementById('stokKritis').innerText = kritis;
+}
+
+function importExcel(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data,{type:'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        let imported = 0;
+        json.forEach(row=>{
+            // Format: Tanggal, Kode, Nama, Tipe, Qty, Satuan
+            if(row.Tanggal && row.Kode && row.Nama && row.Tipe && row.Qty){
+                logs.push({
+                    id:Date.now()+Math.random(),
+                    date:excelDateToJSDate(row.Tanggal),
+                    code:String(row.Kode).toUpperCase(),
+                    note:row.Nama,
+                    type:String(row.Tipe).toUpperCase(),
+                    qty:Number(row.Qty),
+                    unit:row.Satuan||'Pcs'
+                });
+                imported++;
+            }
+        });
+        saveData();
+        alert(`Berhasil import ${imported} data dari Excel!`);
+        e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function excelDateToJSDate(excelDate){
+    if(typeof excelDate === 'string') return excelDate;
+    const date = new Date((excelDate - 25569) * 86400 * 1000);
+    return date.toISOString().split('T')[0];
+}
+
+function downloadTemplate(){
+    const ws_data = [
+        ['Tanggal','Kode','Nama','Tipe','Qty','Satuan'],
+        ['2026-01-15','ATK-001','Kertas A4','MASUK',100,'Rim'],
+        ['2026-01-16','ATK-001','Kertas A4','KELUAR',20,'Rim'],
+        ['2026-01-17','ATK-002','Pulpen Hitam','MASUK',50,'Pcs']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Template");
+    XLSX.writeFile(wb,"Template_Inventory.xlsx");
+}
+
+function exportExcel(){
+    const ws = XLSX.utils.json_to_sheet(logs);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Inventory");
+    XLSX.writeFile(wb,"Inventory_Report.xlsx");
+}
+
+function exportPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("LAPORAN STOCK ON HAND",14,15);
+    const rows = [];
+    document.querySelectorAll('#laporanBody tr').forEach(tr=>{
+        const row = [];
+        tr.querySelectorAll('td').forEach(td=>row.push(td.innerText));
+        rows.push(row);
+    });
+    doc.autoTable({
+        head:[['Kode','Barang','Masuk','Keluar','Stok','Satuan']],
+        body:rows,
+        startY:25
+    });
+    doc.save('Laporan_Stok.pdf');
+}
+
+renderRiwayat();
+renderSummary();
+</script>
+</body>
+</html>
