@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finora ERP - Smart Cash Management</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root{
+    --primary:#2563eb;
+    --dark:#0f172a;
+    --success:#16a34a;
+    --danger:#dc2626;
+    --warning:#f59e0b;
+    --bg:#f1f5f9;
+    --card:#ffffff;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:linear-gradient(135deg,#f8fafc,#e2e8f0);
+    font-family:'Segoe UI',sans-serif;
+    color:#1e293b;
+    min-height:100vh;
+}
+
+/* NAVBAR */
+.navbar-custom{
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    padding:18px 0;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.brand-logo{
+    width:48px;
+    height:48px;
+    border-radius:14px;
+    background:rgba(255,255,255,.1);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-size:1.4rem;
+}
+
+.brand-title{
+    color:white;
+    font-weight:700;
+    font-size:1.2rem;
+}
+
+.brand-sub{
+    color:#cbd5e1;
+    font-size:.8rem;
+}
+
+/* CARDS */
+.card-modern{
+    background:var(--card);
+    border:none;
+    border-radius:24px;
+    box-shadow:0 10px 35px rgba(15,23,42,.06);
+}
+
+.summary-card{
+    padding:24px;
+    border-radius:24px;
+    color:white;
+    transition:.3s;
+}
+
+.summary-card:hover{
+    transform:translateY(-4px);
+}
+
+.bg-balance{
+    background:linear-gradient(135deg,#7c3aed,#6d28d9);
+}
+
+.bg-income{
+    background:linear-gradient(135deg,#16a34a,#15803d);
+}
+
+.bg-expense{
+    background:linear-gradient(135deg,#dc2626,#b91c1c);
+}
+
+.bg-profit{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+}
+
+.summary-label{
+    font-size:.85rem;
+    opacity:.85;
+}
+
+.summary-value{
+    font-size:1.9rem;
+    font-weight:700;
+}
+
+/* FORM */
+.form-control,
+.form-select{
+    border-radius:14px;
+    border:1px solid #dbeafe;
+    padding:12px;
+}
+
+.form-control:focus,
+.form-select:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 .15rem rgba(37,99,235,.15);
+}
+
+.btn{
+    border-radius:14px;
+    font-weight:600;
+    padding:10px 16px;
+}
+
+.btn-primary{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+    border:none;
+}
+
+.btn-success{
+    background:linear-gradient(135deg,#16a34a,#15803d);
+    border:none;
+}
+
+.btn-danger{
+    background:linear-gradient(135deg,#dc2626,#b91c1c);
+    border:none;
+}
+
+.btn-warning{
+    background:linear-gradient(135deg,#f59e0b,#d97706);
+    border:none;
+    color:white;
+}
+
+/* TABLE */
+.table{
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.table thead{
+    background:#0f172a;
+    color:white;
+}
+
+.table th{
+    font-size:.85rem;
+    font-weight:600;
+}
+
+.table td{
+    vertical-align:middle;
+}
+
+.badge-income{
+    background:#dcfce7;
+    color:#166534;
+    padding:8px 14px;
+    border-radius:12px;
+    font-weight:600;
+}
+
+.badge-expense{
+    background:#fee2e2;
+    color:#991b1b;
+    padding:8px 14px;
+    border-radius:12px;
+    font-weight:600;
+}
+
+.empty-state{
+    text-align:center;
+    padding:60px 20px;
+    color:#64748b;
+}
+
+.empty-state i{
+    font-size:4rem;
+}
+
+/* IMPORT */
+.upload-box{
+    border:2px dashed #93c5fd;
+    border-radius:18px;
+    padding:30px;
+    text-align:center;
+    background:#eff6ff;
+    transition:.3s;
+    cursor:pointer;
+}
+
+.upload-box:hover{
+    background:#dbeafe;
+}
+
+.user-chip{
+    background:#eff6ff;
+    color:#1e40af;
+    padding:8px 14px;
+    border-radius:12px;
+    font-weight:600;
+}
+
+.modal-content{
+    border:none;
+    border-radius:24px;
+    overflow:hidden;
+}
+
+.modal-header{
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    color:white;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="modal fade" id="loginModal" data-bs-backdrop="static" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+
+<div class="modal-header">
+<h5 class="modal-title">
+<i class="bi bi-shield-lock me-2"></i>
+Login Finora ERP
+</h5>
+</div>
+
+<div class="modal-body p-4">
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Pilih Entitas</label>
+<select id="loginEntity" class="form-select"></select>
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Username</label>
+<input type="text" id="loginUsername" class="form-control">
+</div>
+
+<div class="mb-4">
+<label class="form-label fw-semibold">Password</label>
+<input type="password" id="loginPassword" class="form-control">
+</div>
+
+<button class="btn btn-primary w-100 mb-2" onclick="login()">
+<i class="bi bi-box-arrow-in-right me-2"></i>
+Login
+</button>
+
+<button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#setupModal" data-bs-dismiss="modal">
+<i class="bi bi-building-add me-2"></i>
+Buat Entitas Baru
+</button>
+
+</div>
+</div>
+</div>
+</div>
+
+<!-- SETUP -->
+<div class="modal fade" id="setupModal" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+
+<div class="modal-header">
+<h5 class="modal-title">
+<i class="bi bi-building me-2"></i>
+Setup Entitas Baru
+</h5>
+<button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body p-4">
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Nama Perusahaan</label>
+<input type="text" id="setupNama" class="form-control">
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">NPWP</label>
+<input type="text" id="setupNPWP" class="form-control">
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Username</label>
+<input type="text" id="setupUsername" class="form-control">
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Password</label>
+<input type="password" id="setupPassword" class="form-control">
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Saldo Awal</label>
+<input type="text" id="setupSaldo" class="form-control" onkeyup="formatInput(this)">
+</div>
+
+</div>
+
+<div class="modal-footer">
+<button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+<button class="btn btn-primary" onclick="createEntity()">
+<i class="bi bi-save me-2"></i>
+Simpan
+</button>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-custom mb-4">
+<div class="container-fluid px-4">
+
+<div class="d-flex align-items-center gap-3">
+<div class="brand-logo">
+<i class="bi bi-wallet2"></i>
+</div>
+
+<div>
+<div class="brand-title">Finora ERP</div>
+<div class="brand-sub">Professional Cash Management System</div>
+</div>
+</div>
+
+<div class="d-flex align-items-center gap-2">
+<div class="user-chip">
+<i class="bi bi-building me-1"></i>
+<span id="entityName">-</span>
+</div>
+
+<div class="user-chip">
+<i class="bi bi-person me-1"></i>
+<span id="usernameView">-</span>
+</div>
+
+<button class="btn btn-sm btn-danger" onclick="logout()">
+<i class="bi bi-box-arrow-right"></i>
+</button>
+</div>
+
+</div>
+</nav>
+
+<!-- MAIN -->
+<div class="container-fluid px-4" id="mainContent" style="display:none">
+
+<!-- SUMMARY -->
+<div class="row mb-4">
+
+<div class="col-lg-3 col-md-6 mb-3">
+<div class="summary-card bg-balance">
+<div class="summary-label">Saldo Awal</div>
+<div class="summary-value" id="saldoAwal">Rp 0</div>
+</div>
+</div>
+
+<div class="col-lg-3 col-md-6 mb-3">
+<div class="summary-card bg-income">
+<div class="summary-label">Total Pemasukan</div>
+<div class="summary-value" id="totalIncome">Rp 0</div>
+</div>
+</div>
+
+<div class="col-lg-3 col-md-6 mb-3">
+<div class="summary-card bg-expense">
+<div class="summary-label">Total Pengeluaran</div>
+<div class="summary-value" id="totalExpense">Rp 0</div>
+</div>
+</div>
+
+<div class="col-lg-3 col-md-6 mb-3">
+<div class="summary-card bg-profit" id="profitCard">
+<div class="summary-label">Saldo Akhir</div>
+<div class="summary-value" id="saldoAkhir">Rp 0</div>
+</div>
+</div>
+
+</div>
+
+<div class="row">
+
+<!-- LEFT -->
+<div class="col-lg-4 mb-4">
+
+<div class="card-modern p-4 mb-4">
+
+<h5 class="fw-bold mb-4">
+<i class="bi bi-plus-circle-fill text-primary me-2"></i>
+Input Transaksi
+</h5>
+
+<form id="transactionForm">
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Jenis Transaksi</label>
+<select id="type" class="form-select" onchange="updateCategory()">
+<option value="income">Pemasukan</option>
+<option value="expense">Pengeluaran</option>
+</select>
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Kategori</label>
+<select id="category" class="form-select"></select>
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Nominal</label>
+<input type="text" id="amount" class="form-control" placeholder="Rp 0" onkeyup="formatInput(this)">
+</div>
+
+<div class="mb-3">
+<label class="form-label fw-semibold">Keterangan</label>
+<input type="text" id="note" class="form-control" placeholder="Catatan transaksi">
+</div>
+
+<div class="mb-4">
+<label class="form-label fw-semibold">Tanggal</label>
+<input type="date" id="date" class="form-control">
+</div>
+
+<button class="btn btn-primary w-100">
+<i class="bi bi-save me-2"></i>
+Simpan Transaksi
+</button>
+
+</form>
+</div>
+
+<!-- IMPORT -->
+<div class="card-modern p-4">
+
+<h5 class="fw-bold mb-4">
+<i class="bi bi-file-earmark-excel-fill text-success me-2"></i>
+Import Excel
+</h5>
+
+<div class="upload-box mb-3" onclick="document.getElementById('excelFile').click()">
+<i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+
+<h6 class="fw-bold mt-3">Upload File Excel</h6>
+
+<p class="small text-muted mb-0">
+Format: Tanggal | Jenis | Kategori | Nominal | Keterangan
+</p>
+
+<input type="file" id="excelFile" hidden accept=".xlsx,.xls" onchange="importExcel(event)">
+</div>
+
+<div class="d-grid gap-2">
+
+<button class="btn btn-success" onclick="downloadTemplate()">
+<i class="bi bi-download me-2"></i>
+Download Template
+</button>
+
+<button class="btn btn-warning" onclick="resetTransactions()">
+<i class="bi bi-arrow-counterclockwise me-2"></i>
+Reset Data
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="col-lg-8">
+
+<div class="card-modern p-4">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+
+<div>
+<h5 class="fw-bold mb-1">Riwayat Transaksi</h5>
+<div class="text-muted small">Data transaksi tersimpan otomatis</div>
+</div>
+
+<div class="d-flex gap-2">
+<button class="btn btn-success" onclick="exportExcel()">
+<i class="bi bi-file-earmark-excel me-1"></i>
+Excel
+</button>
+
+<button class="btn btn-danger" onclick="exportPDF()">
+<i class="bi bi-file-earmark-pdf me-1"></i>
+PDF
+</button>
+</div>
+
+</div>
+
+<div class="table-responsive">
+
+<table class="table table-hover align-middle">
+
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Kategori</th>
+<th>Keterangan</th>
+<th>Jenis</th>
+<th>Nominal</th>
+<th>Aksi</th>
+</tr>
+</thead>
+
+<tbody id="transactionBody"></tbody>
+
+</table>
+
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let DB = JSON.parse(localStorage.getItem('finora_db')) || {
+    entities:[],
+    current:null
+};
+
+let transactions = [];
+let saldoAwal = 0;
+
+const categories = {
+    income:[
+        'Penjualan',
+        'Pendapatan Jasa',
+        'Investasi',
+        'Pendapatan Lain'
+    ],
+    expense:[
+        'Gaji',
+        'Operasional',
+        'Transportasi',
+        'Marketing',
+        'Listrik & Air',
+        'Pengeluaran Lain'
+    ]
+};
+
+function formatRupiah(number){
+    return new Intl.NumberFormat('id-ID',{
+        style:'currency',
+        currency:'IDR',
+        minimumFractionDigits:0
+    }).format(number);
+}
+
+function getNumber(value){
+    return parseFloat(String(value).replace(/[^0-9]/g,'')) || 0;
+}
+
+function formatInput(el){
+    let value = el.value.replace(/[^,\d]/g,'');
+    el.value = value ? 'Rp ' + parseInt(value).toLocaleString('id-ID') : '';
+}
+
+function saveDB(){
+    localStorage.setItem('finora_db', JSON.stringify(DB));
+}
+
+function updateCategory(){
+    const type = document.getElementById('type').value;
+    const category = document.getElementById('category');
+
+    category.innerHTML = categories[type]
+    .map(c=>`<option value="${c}">${c}</option>`)
+    .join('');
+}
+
+function loadEntities(){
+    const select = document.getElementById('loginEntity');
+
+    if(DB.entities.length === 0){
+        select.innerHTML = '<option>Belum ada entitas</option>';
+        return;
+    }
+
+    select.innerHTML = DB.entities.map(e=>
+        `<option value="${e.id}">${e.name}</option>`
+    ).join('');
+}
+
+function createEntity(){
+
+    const data = {
+        id:Date.now(),
+        name:document.getElementById('setupNama').value,
+        npwp:document.getElementById('setupNPWP').value,
+        username:document.getElementById('setupUsername').value,
+        password:document.getElementById('setupPassword').value,
+        saldo:getNumber(document.getElementById('setupSaldo').value),
+        transactions:[]
+    };
+
+    DB.entities.push(data);
+
+    saveDB();
+    loadEntities();
+
+    bootstrap.Modal.getInstance(
+        document.getElementById('setupModal')
+    ).hide();
+
+    alert('Entitas berhasil dibuat');
+}
+
+function login(){
+
+    const entityId = document.getElementById('loginEntity').value;
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    const entity = DB.entities.find(e=>e.id == entityId);
+
+    if(!entity){
+        alert('Entitas tidak ditemukan');
+        return;
+    }
+
+    if(entity.username !== username || entity.password !== password){
+        alert('Username atau password salah');
+        return;
+    }
+
+    DB.current = entity.id;
+    saveDB();
+
+    transactions = entity.transactions || [];
+    saldoAwal = entity.saldo || 0;
+
+    document.getElementById('entityName').innerText = entity.name;
+    document.getElementById('usernameView').innerText = username;
+
+    document.getElementById('mainContent').style.display = 'block';
+
+    bootstrap.Modal.getInstance(
+        document.getElementById('loginModal')
+    ).hide();
+
+    render();
+}
+
+function logout(){
+    location.reload();
+}
+
+document.getElementById('transactionForm')
+.addEventListener('submit', function(e){
+
+    e.preventDefault();
+
+    const entity = DB.entities.find(e=>e.id == DB.current);
+
+    const data = {
+        id:Date.now(),
+        date:document.getElementById('date').value,
+        type:document.getElementById('type').value,
+        category:document.getElementById('category').value,
+        amount:getNumber(document.getElementById('amount').value),
+        note:document.getElementById('note').value
+    };
+
+    transactions.push(data);
+
+    entity.transactions = transactions;
+
+    saveDB();
+
+    render();
+
+    this.reset();
+
+    document.getElementById('date').valueAsDate = new Date();
+
+    updateCategory();
+});
+
+function render(){
+
+    const body = document.getElementById('transactionBody');
+
+    body.innerHTML = '';
+
+    let income = 0;
+    let expense = 0;
+
+    const sorted = [...transactions]
+    .sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+    if(sorted.length === 0){
+        body.innerHTML = `
+        <tr>
+        <td colspan="6">
+            <div class="empty-state">
+                <i class="bi bi-receipt"></i>
+                <h5 class="mt-3">Belum Ada Transaksi</h5>
+                <p>Silakan input transaksi baru</p>
+            </div>
+        </td>
+        </tr>`;
+    }
+
+    sorted.forEach(t=>{
+
+        const isIncome = t.type === 'income';
+
+        if(isIncome) income += t.amount;
+        else expense += t.amount;
+
+        body.innerHTML += `
+        <tr>
+
+        <td>${t.date}</td>
+
+        <td>
+            <span class="${isIncome ? 'badge-income':'badge-expense'}">
+                ${t.category}
+            </span>
+        </td>
+
+        <td>${t.note}</td>
+
+        <td>
+            ${isIncome
+                ? '<span class="text-success fw-bold">Pemasukan</span>'
+                : '<span class="text-danger fw-bold">Pengeluaran</span>'
+            }
+        </td>
+
+        <td class="${isIncome ? 'text-success':'text-danger'} fw-bold">
+            ${isIncome ? '+' : '-'}
+            ${formatRupiah(t.amount)}
+        </td>
+
+        <td>
+            <button class="btn btn-sm btn-danger"
+            onclick="deleteTransaction(${t.id})">
+            <i class="bi bi-trash"></i>
+            </button>
+        </td>
+
+        </tr>`;
+    });
+
+    const total = saldoAwal + income - expense;
+
+    document.getElementById('saldoAwal').innerText = formatRupiah(saldoAwal);
+    document.getElementById('totalIncome').innerText = formatRupiah(income);
+    document.getElementById('totalExpense').innerText = formatRupiah(expense);
+    document.getElementById('saldoAkhir').innerText = formatRupiah(total);
+}
+
+function deleteTransaction(id){
+
+    if(!confirm('Hapus transaksi ini?')) return;
+
+    transactions = transactions.filter(t=>t.id !== id);
+
+    const entity = DB.entities.find(e=>e.id == DB.current);
+
+    entity.transactions = transactions;
+
+    saveDB();
+
+    render();
+}
+
+function resetTransactions(){
+
+    if(!confirm('Reset semua transaksi?')) return;
+
+    transactions = [];
+
+    const entity = DB.entities.find(e=>e.id == DB.current);
+
+    entity.transactions = [];
+
+    saveDB();
+
+    render();
+}
+
+function downloadTemplate(){
+
+    const data = [
+        ['Tanggal','Jenis','Kategori','Nominal','Keterangan'],
+        ['2026-01-01','Pemasukan','Penjualan',5000000,'Invoice'],
+        ['2026-01-02','Pengeluaran','Gaji',2000000,'Gaji Staff']
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb,ws,'Template');
+
+    XLSX.writeFile(wb,'Template_Import.xlsx');
+}
+
+function importExcel(event){
+
+    const file = event.target.files[0];
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+        const data = new Uint8Array(e.target.result);
+
+        const workbook = XLSX.read(data,{type:'array'});
+
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        json.forEach(row=>{
+
+            transactions.push({
+                id:Date.now()+Math.random(),
+                date:row.Tanggal,
+                type:String(row.Jenis).toLowerCase().includes('masuk')
+                    ? 'income'
+                    : 'expense',
+                category:row.Kategori,
+                amount:Number(row.Nominal),
+                note:row.Keterangan || ''
+            });
+
+        });
+
+        const entity = DB.entities.find(e=>e.id == DB.current);
+
+        entity.transactions = transactions;
+
+        saveDB();
+
+        render();
+
+        alert('Import berhasil');
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+function exportExcel(){
+
+    const data = transactions.map(t=>({
+        Tanggal:t.date,
+        Jenis:t.type === 'income'
+            ? 'Pemasukan'
+            : 'Pengeluaran',
+        Kategori:t.category,
+        Nominal:t.amount,
+        Keterangan:t.note
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb,ws,'Laporan');
+
+    XLSX.writeFile(wb,'Laporan_Keuangan.xlsx');
+}
+
+function exportPDF(){
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+
+    doc.text('LAPORAN KEUANGAN',14,15);
+
+    const rows = transactions.map(t=>[
+        t.date,
+        t.category,
+        t.note,
+        t.type === 'income'
+            ? 'Pemasukan'
+            : 'Pengeluaran',
+        formatRupiah(t.amount)
+    ]);
+
+    doc.autoTable({
+        head:[['Tanggal','Kategori','Keterangan','Jenis','Nominal']],
+        body:rows,
+        startY:25
+    });
+
+    doc.save('Laporan_Keuangan.pdf');
+}
+
+/* INIT */
+updateCategory();
+loadEntities();
+
+document.getElementById('date').valueAsDate = new Date();
+
+new bootstrap.Modal(
+    document.getElementById('loginModal')
+).show();
+</script>
+
+</body>
+</html>
