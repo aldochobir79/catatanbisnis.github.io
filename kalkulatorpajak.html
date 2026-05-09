@@ -1,13 +1,630 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPh 21 Pro - All in One</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { background-color: #f4f7f6; padding: 20px; }
+      .card { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+      .table-responsive { max-height: 600px; }
+      .btn-sm { font-size: 0.8rem; }
+      .npwp-input { letter-spacing: 1px; }
+      .nav-pills.nav-link.active { background-color: #0d6efd; }
+      .tab-content { background: white; padding: 20px; border-radius: 0 0 15px 15px; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="text-center mb-3"><i class="bi bi-calculator"></i> PPh 21 Pro - Kontraktor Edition</h2>
 
+            <!-- DATA PT -->
+            <div class="card p-3 mb-3">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Perusahaan Pemotong *</label>
+                        <select id="pilih_pt" class="form-select" onchange="gantiPT()"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalPT">
+                            <i class="bi bi-building-add"></i> Tambah PT
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Masa Pajak</label>
+                        <input type="month" id="masa_pajak" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-danger w-100" onclick="hapusPT()">
+                            <i class="bi bi-trash"></i> Hapus
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-2 small">
+                    <span class="badge bg-secondary">NPWP PT: <span id="info_npwp_pt" class="fw-bold"></span></span>
+                    <span class="badge bg-info">Total Data: <span id="info_total_data" class="fw-bold">0</span></span>
+                    <span class="badge bg-success">Total PPh: <span id="info_total_pph" class="fw-bold">Rp 0</span></span>
+                </div>
+            </div>
+
+            <!-- TABS -->
+            <ul class="nav nav-pills mb-0" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab_karyawan">
+                        <i class="bi bi-people"></i> PPh 21 Karyawan
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab_final_op">
+                        <i class="bi bi-person"></i> PPh 21 Final OP
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab_umkm">
+                        <i class="bi bi-shop"></i> PPh Final UMKM 0.5%
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- TAB 1: KARYAWAN -->
+                <div class="tab-pane fade show active" id="tab_karyawan">
+                    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+                        <h5>Daftar Karyawan <span id="nama_pt_aktif" class="text-primary"></span></h5>
+                        <div class="btn-group">
+                            <button class="btn btn-primary btn-sm" onclick="bukaModalKaryawan()"><i class="bi bi-person-plus"></i> Tambah</button>
+                            <button class="btn btn-success btn-sm" onclick="hitungSemua()"><i class="bi bi-lightning"></i> Hitung</button>
+                            <button class="btn btn-warning btn-sm" onclick="exportExcel('karyawan')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+                            <button class="btn btn-danger btn-sm" onclick="exportPDF('karyawan')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>No</th><th>Nama</th><th>NPWP</th><th>Gaji/Bln</th><th>Bln</th><th>THR</th>
+                                    <th>PTKP</th><th>Bruto/Thn</th><th>PPh 21</th><th>THP/Bln</th><th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_karyawan">
+                                <tr><td colspan="11" class="text-center text-muted py-4">Belum ada data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PPH 21 FINAL OP -->
+                <div class="tab-pane fade" id="tab_final_op">
+                    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+                        <h5>Daftar Bukti Potong PPh 21 Final - Orang Pribadi</h5>
+                        <div class="btn-group">
+                            <button class="btn btn-primary btn-sm" onclick="bukaModalFinalOP()"><i class="bi bi-plus"></i> Tambah</button>
+                            <button class="btn btn-warning btn-sm" onclick="exportExcel('final_op')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+                            <button class="btn btn-danger btn-sm" onclick="exportPDF('final_op')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>No</th><th>Nama Penerima</th><th>NPWP</th><th>Jenis Penghasilan</th>
+                                    <th>Bruto</th><th>Tarif</th><th>PPh Final</th><th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_final_op">
+                                <tr><td colspan="8" class="text-center text-muted py-4">Belum ada data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: UMKM -->
+                <div class="tab-pane fade" id="tab_umkm">
+                    <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+                        <h5>Daftar PPh Final UMKM 0.5% - PP 23/2018</h5>
+                        <div class="btn-group">
+                            <button class="btn btn-primary btn-sm" onclick="bukaModalUMKM()"><i class="bi bi-plus"></i> Tambah</button>
+                            <button class="btn btn-warning btn-sm" onclick="exportExcel('umkm')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+                            <button class="btn btn-danger btn-sm" onclick="exportPDF('umkm')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning py-2 small">
+                        <i class="bi bi-exclamation-triangle"></i> PPh Final 0.5% berlaku untuk omzet < Rp 4.8M/tahun. Wajib punya SK PP 23 dari DJP.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>No</th><th>Nama UMKM/CV</th><th>NPWP</th><th>Omzet Bulan Ini</th>
+                                    <th>Tarif</th><th>PPh Final</th><th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_umkm">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PT -->
+<div class="modal fade" id="modalPT" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah Perusahaan Pemotong</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nama PT/CV *</label>
+                    <input type="text" id="input_nama_pt" class="form-control" placeholder="PT. Kontraktor Jaya">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">NPWP Perusahaan *</label>
+                    <input type="text" id="input_npwp_pt" class="form-control npwp-input" maxlength="20" placeholder="00.000.000.0-000.000" onkeyup="formatNPWP(this)">
+                    <div class="form-text text-danger">*Wajib untuk semua jenis pemotongan PPh</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="simpanPT()">Simpan PT</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL KARYAWAN -->
+<div class="modal fade" id="modalKaryawan" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalKaryawanTitle">Tambah Karyawan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit_id_karyawan">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nama Karyawan *</label>
+                        <input type="text" id="form_nama" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">NPWP Karyawan</label>
+                        <input type="text" id="form_npwp" class="form-control npwp-input" maxlength="20" onkeyup="formatNPWP(this)">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Gaji Bruto/Bulan *</label>
+                        <input type="text" id="form_gaji" class="form-control" onkeyup="formatInput(this); updatePreviewModal()">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Masa Kerja *</label>
+                        <input type="number" id="form_bulan" class="form-control" value="12" min="1" max="12" onchange="updatePreviewModal()">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">THR/Bonus</label>
+                        <input type="text" id="form_thr" class="form-control" onkeyup="formatInput(this); updatePreviewModal()">
+                    </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Status PTKP *</label>
+                        <select id="form_ptkp" class="form-select" onchange="updatePreviewModal()">
+                            <option value="54000000">TK/0 - Rp 54.000.000</option>
+                            <option value="58500000">K/0 - Rp 58.500.000</option>
+                            <option value="63000000">K/1 - Rp 63.000.000</option>
+                            <option value="67500000">K/2 - Rp 67.500.000</option>
+                            <option value="72000000">K/3 - Rp 72.000.000</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Biaya Jabatan</label>
+                        <input type="text" id="form_biaya_jabatan" class="form-control" disabled>
+                    </div>
+                </div>
+                <div class="alert alert-info py-2 mb-0">
+                    Bruto: <span id="form_total_bruto" class="fw-bold">Rp 0</span> |
+                    PPh: <span id="form_total_pph" class="fw-bold text-danger">Rp 0</span> |
+                    THP: <span id="form_total_thp" class="fw-bold text-success">Rp 0</span>
+                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="simpanKaryawan()">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FINAL OP -->
+<div class="modal fade" id="modalFinalOP" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah PPh 21 Final OP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit_id_final_op">
+                <div class="mb-3">
+                    <label class="form-label">Nama Penerima *</label>
+                    <input type="text" id="form_final_nama" class="form-control" placeholder="Nama mandor/tukang">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">NPWP Penerima</label>
+                    <input type="text" id="form_final_npwp" class="form-control npwp-input" maxlength="20" onkeyup="formatNPWP(this)">
+                    <div class="form-text">Kosongkan jika tidak punya NPWP. Tarif jadi 20% lebih tinggi</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Penghasilan Bruto *</label>
+                    <input type="text" id="form_final_bruto" class="form-control" onkeyup="formatInput(this); hitungFinalOP()">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Jenis Penghasilan *</label>
+                    <select id="form_final_jenis" class="form-select" onchange="hitungFinalOP()">
+                        <option value="honor">Honorarium/Jasa - 5%</option>
+                        <option value="dppu">Jasa Non-Pegawai DPPU 50% - 2.5%</option>
+                        <option value="pesangon">Pesangon</option>
+                        <option value="hadiah">Hadiah Undian - 25%</option>
+                        <option value="sewa_tanah">Sewa Tanah/Bangunan - 10%</option>
+                    </select>
+                </div>
+                <div class="alert alert-info py-2 mb-0">
+                    PPh Final: <span id="form_final_pph" class="fw-bold text-danger">Rp 0</span>
+                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="simpanFinalOP()">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL UMKM -->
+<div class="modal fade" id="modalUMKM" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah PPh Final UMKM 0.5%</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit_id_umkm">
+                <div class="mb-3">
+                    <label class="form-label">Nama UMKM/CV *</label>
+                    <input type="text" id="form_umkm_nama" class="form-control" placeholder="CV Material Jaya">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">NPWP UMKM *</label>
+                    <input type="text" id="form_umkm_npwp" class="form-control npwp-input" maxlength="20" onkeyup="formatNPWP(this)">
+                    <div class="form-text text-danger">Wajib punya SK PP 23 dari DJP</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Omzet Bulan Ini *</label>
+                    <input type="text" id="form_umkm_omzet" class="form-control" onkeyup="formatInput(this); hitungUMKM()">
+                </div>
+                <div class="alert alert-success py-2 mb-0">
+                    PPh Final 0.5%: <span id="form_umkm_pph" class="fw-bold">Rp 0</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="simpanUMKM()">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const { jsPDF } = window.jspdf;
+    let DB = { perusahaan: [], ptAktif: null };
+    let modalKaryawan, modalPT, modalFinalOP, modalUMKM;
+
+    window.onload = function() {
+        modalKaryawan = new bootstrap.Modal(document.getElementById('modalKaryawan'));
+        modalPT = new bootstrap.Modal(document.getElementById('modalPT'));
+        modalFinalOP = new bootstrap.Modal(document.getElementById('modalFinalOP'));
+        modalUMKM = new bootstrap.Modal(document.getElementById('modalUMKM'));
+        loadDB();
+        document.getElementById('masa_pajak').value = new Date().toISOString().slice(0,7);
+        if (DB.perusahaan.length === 0) modalPT.show();
+        else { renderPilihPT(); gantiPT(); }
+    }
+
+    function loadDB() {
+        const saved = localStorage.getItem('pph21_db_v2');
+        if (saved) DB = JSON.parse(saved);
+        DB.perusahaan.forEach(pt => {
+            if (!pt.final_op) pt.final_op = [];
+            if (!pt.umkm) pt.umkm = [];
+        });
+    }
+
+    function saveDB() {
+        localStorage.setItem('pph21_db_v2', JSON.stringify(DB));
+    }
+
+    function formatRupiah(angka) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    }
+
+    function getNumber(str) {
+        return parseFloat(String(str).replace(/[^0-9]/g, '')) || 0;
+    }
+
+    function formatInput(el) {
+        let value = el.value.replace(/[^,\d]/g, '').toString();
+        el.value = value? 'Rp ' + parseInt(value).toLocaleString('id-ID') : '';
+    }
+
+    function formatNPWP(el) {
+        let value = el.value.replace(/\D/g, '');
+        let f = '';
+        if (value.length > 0) f = value.substring(0, 2);
+        if (value.length > 2) f += '.' + value.substring(2, 5);
+        if (value.length > 5) f += '.' + value.substring(5, 8);
+        if (value.length > 8) f += '.' + value.substring(8, 9);
+        if (value.length > 9) f += '-' + value.substring(9, 12);
+        if (value.length > 12) f += '.' + value.substring(12, 15);
+        el.value = f;
+    }
+
+    // PT
+    function simpanPT() {
+        const nama = document.getElementById('input_nama_pt').value.trim();
+        const npwp = document.getElementById('input_npwp_pt').value.trim();
+        if (!nama ||!npwp) { alert('Nama dan NPWP wajib!'); return; }
+        DB.perusahaan.push({ id: Date.now(), nama, npwp, karyawan: [], final_op: [], umkm: [] });
+        DB.ptAktif = DB.perusahaan[DB.perusahaan.length-1].id;
+        saveDB(); renderPilihPT(); gantiPT(); modalPT.hide();
+        document.getElementById('input_nama_pt').value = '';
+        document.getElementById('input_npwp_pt').value = '';
+    }
+
+    function renderPilihPT() {
+        document.getElementById('pilih_pt').innerHTML = DB.perusahaan.map(pt =>
+            `<option value="${pt.id}" ${pt.id === DB.ptAktif? 'selected' : ''}>${pt.nama}</option>`
+        ).join('');
+    }
+
+    function gantiPT() {
+        DB.ptAktif = parseInt(document.getElementById('pilih_pt').value);
+        saveDB();
+        const pt = getPTAktif();
+        if (pt) {
+            document.getElementById('info_npwp_pt').innerText = pt.npwp;
+            document.getElementById('nama_pt_aktif').innerText = pt.nama;
+            renderSemuaTabel();
+        }
+    }
+
+    function hapusPT() {
+        if (!DB.ptAktif) return;
+        const pt = getPTAktif();
+        if (confirm(`Hapus ${pt.nama}?`)) {
+            DB.perusahaan = DB.perusahaan.filter(p => p.id!== DB.ptAktif);
+            DB.ptAktif = DB.perusahaan[0]?.id || null;
+            saveDB(); renderPilihPT(); gantiPT();
+        }
+    }
+
+    function getPTAktif() {
+        return DB.perusahaan.find(p => p.id === DB.ptAktif);
+    }
+
+    // KARYAWAN
+    function bukaModalKaryawan(id = null) {
+        document.getElementById('edit_id_karyawan').value = id || '';
+        document.getElementById('modalKaryawanTitle').innerText = id? 'Edit Karyawan' : 'Tambah Karyawan';
+        if (id) {
+            const k = getPTAktif().karyawan.find(k => k.id === id);
+            document.getElementById('form_nama').value = k.nama;
+            document.getElementById('form_npwp').value = k.npwp;
+            document.getElementById('form_gaji').value = k.gaji? 'Rp '+k.gaji.toLocaleString('id-ID') : '';
+            document.getElementById('form_bulan').value = k.bulan;
+            document.getElementById('form_thr').value = k.thr? 'Rp '+k.thr.toLocaleString('id-ID') : '';
+            document.getElementById('form_ptkp').value = k.ptkp;
+        } else {
+            ['form_nama','form_npwp','form_gaji','form_thr'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('form_bulan').value = 12;
+            document.getElementById('form_ptkp').value = 54000000;
+        }
+        updatePreviewModal();
+        modalKaryawan.show();
+    }
+
+    function updatePreviewModal() {
+        const gaji = getNumber(document.getElementById('form_gaji').value);
+        const bulan = parseInt(document.getElementById('form_bulan').value) || 0;
+        const thr = getNumber(document.getElementById('form_thr').value);
+        const ptkp = parseInt(document.getElementById('form_ptkp').value);
+        const bruto = (gaji * bulan) + thr;
+        const bj = Math.min(bruto * 0.05, 6000000);
+        const netto = bruto - bj;
+        let pkp = Math.max(0, netto - ptkp), pajak = 0;
+        if (pkp > 5000000000) { pajak += (pkp - 5000000000) * 0.35; pkp = 5000000000; }
+        if (pkp > 500000000) { pajak += (pkp - 500000000) * 0.30; pkp = 500000000; }
+        if (pkp > 250000000) { pajak += (pkp - 250000000) * 0.25; pkp = 250000000; }
+        if (pkp > 60000000) { pajak += (pkp - 60000000) * 0.15; pkp = 60000000; }
+        pajak += pkp * 0.05;
+        document.getElementById('form_total_bruto').innerText = formatRupiah(bruto);
+        document.getElementById('form_total_netto').innerText = formatRupiah(netto);
+        document.getElementById('form_biaya_jabatan').value = formatRupiah(bj);
+        document.getElementById('form_total_pph').innerText = formatRupiah(pajak);
+        document.getElementById('form_total_thp').innerText = formatRupiah(gaji - (pajak/bulan));
+    }
+
+    function simpanKaryawan() {
+        const pt = getPTAktif();
+        if (!pt) return;
+        const id = document.getElementById('edit_id_karyawan').value;
+        const nama = document.getElementById('form_nama').value.trim();
+        const gaji = getNumber(document.getElementById('form_gaji').value);
+        if (!nama ||!gaji) { alert('Nama dan Gaji wajib!'); return; }
+
+        const data = {
+            id: id? parseInt(id) : Date.now(),
+            nama: nama,
+            npwp: document.getElementById('form_npwp').value,
+            gaji: gaji,
+            bulan: parseInt(document.getElementById('form_bulan').value),
+            thr: getNumber(document.getElementById('form_thr').value),
+            ptkp: parseInt(document.getElementById('form_ptkp').value),
+            bruto: 0, pph: 0, thp: 0
+        };
+
+        if (id) {
+            const idx = pt.karyawan.findIndex(k => k.id === data.id);
+            pt.karyawan[idx] = data;
+        } else {
+            pt.karyawan.push(data);
+        }
+        hitungKaryawan(data.id);
+        modalKaryawan.hide();
+    }
+
+    function hapusBaris(id) {
+        if (!confirm('Hapus karyawan ini?')) return;
+        const pt = getPTAktif();
+        pt.karyawan = pt.karyawan.filter(k => k.id!== id);
+        renderTabel(); saveDB();
+    }
+
+    function hitungKaryawan(id) {
+        const pt = getPTAktif();
+        const k = pt.karyawan.find(k => k.id === id);
+        if (!k) return;
+        const bruto = (k.gaji * k.bulan) + k.thr;
+        const bj = Math.min(bruto * 0.05, 6000000);
+        const netto = bruto - bj;
+        let pkp = Math.max(0, netto - k.ptkp), pajak = 0;
+        if (pkp > 5000000000) { pajak += (pkp - 5000000000) * 0.35; pkp = 5000000000; }
+        if (pkp > 500000000) { pajak += (pkp - 500000000) * 0.30; pkp = 500000000; }
+        if (pkp > 250000000) { pajak += (pkp - 250000000) * 0.25; pkp = 250000000; }
+        if (pkp > 60000000) { pajak += (pkp - 60000000) * 0.15; pkp = 60000000; }
+        pajak += pkp * 0.05;
+        k.bruto = bruto; k.pph = pajak; k.thp = k.gaji - (pajak / k.bulan);
+        renderTabel(); saveDB();
+    }
+
+    function hitungSemua() {
+        const pt = getPTAktif();
+        if (!pt ||!pt.npwp) { alert('Isi NPWP PT dulu!'); return; }
+        pt.karyawan.forEach(k => hitungKaryawan(k.id));
+    }
+
+    // FINAL OP
+    function bukaModalFinalOP(id = null) {
+        document.getElementById('edit_id_final_op').value = id || '';
+        if (id) {
+            const d = getPTAktif().final_op.find(x => x.id === id);
+            document.getElementById('form_final_nama').value = d.nama;
+            document.getElementById('form_final_npwp').value = d.npwp;
+            document.getElementById('form_final_bruto').value = 'Rp '+d.bruto.toLocaleString('id-ID');
+            document.getElementById('form_final_jenis').value = d.jenis;
+        } else {
+            ['form_final_nama','form_final_npwp','form_final_bruto'].forEach(id => document.getElementById(id).value = '');
+        }
+        hitungFinalOP(); modalFinalOP.show();
+    }
+
+    function hitungFinalOP() {
+        const bruto = getNumber(document.getElementById('form_final_bruto').value);
+        const jenis = document.getElementById('form_final_jenis').value;
+        const npwp = document.getElementById('form_final_npwp').value;
+        let pajak = 0, tarif = 0;
+
+        if (jenis === 'honor') tarif = 0.05;
+        else if (jenis === 'dppu') tarif = 0.025;
+        else if (jenis === 'hadiah') tarif = 0.25;
+        else if (jenis === 'sewa_tanah') tarif = 0.10;
+        else if (jenis === 'pesangon') {
+            if (bruto <= 50000000) pajak = 0;
+            else if (bruto <= 100000000) pajak = (bruto - 50000000) * 0.05;
+            else pajak = 2500000 + ((bruto - 100000000) * 0.15);
+        }
+
+        if (jenis!== 'pesangon') pajak = bruto * tarif;
+        if (!npwp && jenis!== 'pesangon') pajak *= 1.2; // Tanpa NPWP +20%
+
+        document.getElementById('form_final_pph').innerText = formatRupiah(pajak);
+    }
+
+    function simpanFinalOP() {
+        const pt = getPTAktif();
+        const id = document.getElementById('edit_id_final_op').value;
+        const nama = document.getElementById('form_final_nama').value.trim();
+        const bruto = getNumber(document.getElementById('form_final_bruto').value);
+        if (!nama ||!bruto) { alert('Nama dan Bruto wajib!'); return; }
+
+        const data = {
+            id: id? parseInt(id) : Date.now(),
+            nama: nama,
+            npwp: document.getElementById('form_final_npwp').value,
+            bruto: bruto,
+            jenis: document.getElementById('form_final_jenis').value,
+            pph: getNumber(document.getElementById('form_final_pph').innerText)
+        };
+
+        if (id) {
+            const idx = pt.final_op.findIndex(x => x.id === data.id);
+            pt.final_op[idx] = data;
+        } else {
+            pt.final_op.push(data);
+        }
+        saveDB(); renderSemuaTabel(); modalFinalOP.hide();
+    }
+
+    // UMKM
+    function bukaModalUMKM(id = null) {
+        document.getElementById('edit_id_umkm').value = id || '';
+        if (id) {
+            const d = getPTAktif().umkm.find(x => x.id === id);
+            document.getElementById('form_umkm_nama').value = d.nama;
+            document.getElementById('form_umkm_npwp').value = d.npwp;
+            document.getElementById('form_umkm_omzet').value = 'Rp '+d.omzet.toLocaleString('id-ID');
+        } else {
+            ['form_umkm_nama','form_umkm_npwp','form_umkm_omzet'].forEach(id => document.getElementById(id).value = '');
+        }
+        hitungUMKM(); modalUMKM.show();
+    }
+
+    function hitungUMKM() {
+        const omzet = getNumber(document.getElementById('form_umkm_omzet').value);
+        document.getElementById('form_umkm_pph').innerText = formatRupiah(omzet * 0.005);
+    }
+
+    function simpanUMKM() {
+        const pt = getPTAktif();
+        const id = document.getElementById('edit_id_umkm').value;
+        const nama = document.getElementById('form_umkm_nama').value.trim();
+        const npwp = document.getElementById('form_umkm_npwp').value.trim();
+        const omzet = getNumber(document.getElementById('form_umkm_omzet').value);
+        if (!nama ||!npwp ||!omzet) { alert('Semua wajib diisi! NPWP UMKM wajib untuk PP 23'); return; }
+
+        const data = { id: id? parseInt(id) : Date.now(), nama, npwp, omzet, pph: omzet * 0.005 };
+
+        if (id) {
+            const idx = pt.umkm.findIndex(x => x.id === data.id);
+            pt.umkm[idx] = data;
+        } else {
+            pt.umkm.push(data);
+        }
+        saveDB(); renderSemuaTabel(); modalUMKM.hide();
+    }
+
+    // RENDER
+    function renderSemuaTabel() {
+        renderTabel();
+        renderTabelFinal
